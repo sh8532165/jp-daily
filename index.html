@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#00a84f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="진주 글">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>진주 글</title>
+<style>
+:root{--g:#00a84f;--gd:#008a41;--ink:#222;--sub:#777;--line:#e6e6e6;--bg:#f6f7f6}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-text-size-adjust:100%}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:8px 0 16px}
+.lock{min-height:80vh;display:flex;flex-direction:column;justify-content:center}
+.lock h1{text-align:center;color:var(--g);font-size:28px}
+input[type=password]{width:100%;font-size:20px;padding:14px;border:2px solid var(--line);border-radius:12px;background:#fff}
+input[type=password]:focus{outline:none;border-color:var(--g)}
+label.remember{display:flex;align-items:center;gap:10px;font-size:17px;margin:14px 2px}
+label.remember input{width:22px;height:22px;accent-color:var(--g)}
+.btn{display:block;width:100%;min-height:54px;font-size:18px;font-weight:700;border:0;border-radius:12px;background:var(--g);color:#fff;padding:12px;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.btn:active{background:var(--gd)}
+.btn.line{background:#fff;color:var(--g);border:2px solid var(--g)}
+.btn.small{min-height:44px;font-size:16px}
+.err{color:#c62828;text-align:center;min-height:24px;margin:10px 0;font-size:16px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.link{background:none;border:0;color:var(--sub);font-size:16px;padding:10px 4px;cursor:pointer}
+.item{display:block;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 12px;text-decoration:none;color:var(--ink)}
+.item .d{font-size:15px;color:var(--sub);margin-bottom:6px}
+.item .t{font-size:18px;font-weight:700;line-height:1.4}
+.badge{display:inline-block;background:var(--g);color:#fff;font-size:13px;border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:1px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 18px}
+.grid .wide{grid-column:1 / -1}
+.hint{font-size:14px;color:var(--sub);margin:-8px 2px 16px;line-height:1.5}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 14px}
+.card .name{font-size:14px;font-weight:700;color:var(--g);margin:0 0 10px}
+.card .body{overflow-x:auto}
+.card .body img{max-width:100%;height:auto}
+.card .btn{margin-top:12px}
+.photo .num{font-size:26px;font-weight:800;color:var(--g)}
+.photo .file{font-size:20px;font-weight:700;margin:2px 0 10px;word-break:break-all}
+.photo img{display:block;width:100%;height:auto;border-radius:8px;-webkit-touch-callout:default}
+.photo .src{font-size:13px;color:var(--sub);margin-top:8px}
+.credits{font-size:14px;line-height:1.7;color:#555}
+.empty{color:var(--sub);text-align:center;padding:40px 0;font-size:17px}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(20,20,20,.9);color:#fff;padding:12px 18px;border-radius:999px;font-size:16px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center;z-index:9}
+#toast.on{opacity:1}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><p class="empty">여는 중…</p></div>
+<div id="toast"></div>
+<script>
+"use strict";
+const APP = document.getElementById("app");
+const ENC = new TextEncoder(), DEC = new TextDecoder();
+const STORE = "jp_key_v1";
+let META = null, KEY = null, INDEX = null;
+const POSTS = {};
+
+function b64d(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+function b64e(u) { let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in (attrs || {})) { if (k === "class") e.className = attrs[k]; else if (k.startsWith("on")) e.addEventListener(k.slice(2), attrs[k]); else e.setAttribute(k, attrs[k]); }
+  for (const c of kids) if (c != null) e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return e;
+}
+let toastTimer = null;
+function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 2600); }
+function store(get, val) { try { if (get) return localStorage.getItem(STORE); if (val === null) localStorage.removeItem(STORE); else localStorage.setItem(STORE, val); } catch (e) { return null; } }
+
+async function loadMeta() { const r = await fetch("d/k.json?t=" + Date.now(), { cache: "no-store" }); if (!r.ok) throw new Error("meta"); META = await r.json(); }
+async function derive(pw) {
+  const base = await crypto.subtle.importKey("raw", ENC.encode(pw.normalize("NFC")), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64d(META.salt), iterations: META.iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, true, ["decrypt"]);
+}
+async function dec(name) {
+  const r = await fetch("d/" + name + "?v=" + META.ver, { cache: "no-store" });
+  if (!r.ok) throw new Error("fetch " + name);
+  const buf = new Uint8Array(await r.arrayBuffer());
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12), additionalData: ENC.encode("jp1:" + name) }, KEY, buf.slice(12));
+  return JSON.parse(DEC.decode(pt));
+}
+
+function showLock(msg) {
+  KEY = null;
+  const pw = el("input", { type: "password", id: "pw", autocomplete: "current-password", placeholder: "비밀번호", enterkeyhint: "go" });
+  const rem = el("input", { type: "checkbox", id: "rem" }); rem.checked = true;
+  const err = el("p", { class: "err" }, msg || "");
+  const go = el("button", { class: "btn", type: "submit" }, "열기");
+  const form = el("form", { class: "lock" }, el("h1", {}, META ? META.name : "진주 글"), pw,
+    el("label", { class: "remember" }, rem, "이 기기에서 기억하기"), go, err);
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (!pw.value) return;
+    go.disabled = true; go.textContent = "여는 중…"; err.textContent = "";
+    try {
+      KEY = await derive(pw.value);
+      try { INDEX = await dec("i.bin"); } catch (e) {
+        if (e && (e.name === "TypeError" || (e.message || "").startsWith("fetch"))) { KEY = null; err.textContent = "인터넷 연결을 확인해 주세요."; go.disabled = false; go.textContent = "열기"; return; }
+        throw e;
+      }
+      if (rem.checked) store(false, JSON.stringify({ s: META.salt, k: b64e(new Uint8Array(await crypto.subtle.exportKey("raw", KEY))) }));
+      route();
+    } catch (e) {
+      KEY = null; err.textContent = "비밀번호가 달라요. 다시 넣어 주세요."; go.disabled = false; go.textContent = "열기"; pw.select();
+    }
+  });
+  APP.replaceChildren(form);
+  setTimeout(() => pw.focus(), 50);
+}
+
+function fmtDate(d) {
+  const t = new Date(d + "T00:00:00+09:00");
+  const w = "일월화수목금토"[new Date(d + "T12:00:00+09:00").getUTCDay()];
+  return `${t.getMonth() + 1}월 ${Number(d.slice(8, 10))}일 (${w})`;
+}
+function todayKST() { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
+
+function showList() {
+  const head = el("div", { class: "top" }, el("h1", {}, META.name), el("button", { class: "link", onclick: () => { store(false, null); showLock("잠갔어요."); } }, "잠그기"));
+  const kids = [head];
+  if (!INDEX.posts.length) kids.push(el("p", { class: "empty" }, "아직 올라온 글이 없어요."));
+  for (const p of INDEX.posts) {
+    const d = el("div", { class: "d" }, fmtDate(p.date));
+    if (p.date === todayKST()) d.append(el("span", { class: "badge" }, "오늘"));
+    kids.push(el("a", { class: "item", href: "#p=" + p.id }, d, el("div", { class: "t" }, p.title)));
+  }
+  kids.push(el("p", { class: "hint" }, `최근 ${INDEX.days}일 글만 보여요 · ${INDEX.built} 올림`));
+  APP.replaceChildren(...kids);
+  window.scrollTo(0, 0);
+}
+
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+  const ta = el("textarea", { readonly: "", style: "position:fixed;top:0;left:0;opacity:0" }); ta.value = t;
+  document.body.append(ta); ta.select(); ta.setSelectionRange(0, t.length);
+  let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+  ta.remove(); return ok;
+}
+function copyRichSelect(html) {
+  const box = el("div", { contenteditable: "true", inputmode: "none",
+    style: "position:fixed;left:0;top:0;width:680px;max-height:2px;overflow:hidden;opacity:0.01;z-index:-1;background:#fff;color:#333" });
+  box.innerHTML = html;
+  document.body.append(box);
+  const sel = window.getSelection(); sel.removeAllRanges();
+  const r = document.createRange(); r.selectNodeContents(box); sel.addRange(r);
+  let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+  sel.removeAllRanges(); box.blur(); box.remove();
+  return ok;
+}
+async function copyRichItem(html, plain) {
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }), "text/plain": new Blob([plain], { type: "text/plain" }) })]);
+    return true;
+  } catch (e) { return false; }
+}
+async function copyRich(html, plain, way) {
+  if (way !== "B" && copyRichSelect(html)) return true;
+  if (await copyRichItem(html, plain)) return true;
+  return copyText(plain);
+}
+function done(ok, what) { toast(ok ? `${what} 복사했어요 ✓` : "복사가 안 됐어요 — 길게 눌러 직접 복사해 주세요"); }
+
+function photoFiles(post) { return post.photos.map(p => new File([b64d(p.b64)], p.file, { type: "image/jpeg" })); }
+async function shareFiles(files, many) {
+  if (navigator.canShare && navigator.canShare({ files })) {
+    try { await navigator.share({ files }); return; } catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  toast(many ? "이 기기에선 한 번에 저장이 안 돼요 — 아래 사진을 길게 눌러 '사진 앱에 저장'" : "사진을 길게 눌러 '사진 앱에 저장'을 눌러 주세요");
+}
+
+function withImages(html, urls) { return html.replace(/src="img:([^"]+)"/g, (m, f) => `src="${urls[f] || ""}"`); }
+
+async function showPost(id) {
+  let post = POSTS[id];
+  if (!post) {
+    APP.replaceChildren(el("p", { class: "empty" }, "글 여는 중…"));
+    const meta = INDEX.posts.find(p => p.id === id);
+    if (!meta) { location.hash = ""; return; }
+    try { post = POSTS[id] = await dec(meta.file); } catch (e) { APP.replaceChildren(el("p", { class: "empty" }, "글을 열지 못했어요. 새로고침해 주세요.")); return; }
+  }
+  const urls = {};
+  for (const p of post.photos) urls[p.file] = "data:image/jpeg;base64," + p.b64;
+  const full = withImages(post.html, urls);
+  const B = (label, fn, cls) => el("button", { class: "btn " + (cls || ""), onclick: fn }, label);
+  const grid = el("div", { class: "grid" },
+    B("제목 복사", async () => done(await copyText(post.title), "제목")),
+    (() => { const b = B("사진 전부 저장", () => shareFiles(photoFiles(post), true)); b.append(el("br"), el("small", { style: "font-weight:400;font-size:14px" }, `${post.photos.length}장 · 이름 그대로`)); return b; })(),
+    B("통째로 복사 (서식+사진)", async () => done(await copyRich(full, post.text), "글 전체"), "wide"),
+    B("글자만 복사", async () => done(await copyText(post.text), "글자"), "line"),
+    B("태그 복사", async () => done(await copyText(post.tags), "태그"), "line"));
+  if (post.places.length) {
+    grid.append(B("장소 주소 복사", async () => done(await copyText(post.places.map(p => p.url).join("\n")), "장소 주소"), "line"),
+      B("장소 이름 복사", async () => done(await copyText(post.places.map(p => p.name).join("\n")), "장소 이름"), "line"));
+  }
+  const kids = [
+    el("div", { class: "top" }, el("button", { class: "link", onclick: () => { location.hash = ""; } }, "‹ 목록"), el("span", { class: "hint", style: "margin:0" }, fmtDate(post.date))),
+    el("h1", {}, post.title),
+    post.missing && post.missing.length ? el("p", { class: "err", style: "text-align:left" }, "빠진 것: " + post.missing.join(", ") + " — 그 자리는 아내가 채우기") : null,
+    post.check && post.check.length ? el("p", { class: "err", style: "text-align:left" }, "확인할 점: " + post.check.join(" / ") + " — 붙여넣고 고칠 때 보기") : null,
+    grid,
+    el("p", { class: "hint" }, "통째로 붙여넣기가 이상하면: ",
+      el("button", { class: "link", style: "padding:0;color:#00a84f;text-decoration:underline", onclick: async () => done(await copyRich(full, post.text, "B"), "글 전체(다른 방식)") }, "다른 방식으로 통째로 복사"),
+      " · 그래도 안 되면 아래 구간마다 복사"),
+  ];
+  for (const s of post.segments) {
+    if (s.kind === "photo") {
+      const p = post.photos.find(x => x.file === s.file);
+      const card = el("div", { class: "card photo" }, el("div", { class: "num" }, "사진 " + s.mark), el("div", { class: "file" }, s.file || "(사진 없음)"));
+      if (p) {
+        card.append(el("img", { src: urls[p.file], alt: p.file }), el("div", { class: "src" }, p.credit),
+          B("이 사진 저장", () => shareFiles([new File([b64d(p.b64)], p.file, { type: "image/jpeg" })], false), "line small"));
+      }
+      kids.push(card);
+    } else {
+      const body = el("div", { class: "body" }); body.innerHTML = withImages(s.html, urls);
+      kids.push(el("div", { class: "card" }, el("div", { class: "name" }, s.name), body,
+        B("이 부분 복사", async () => done(await copyRich(withImages(s.html, urls), s.text), "이 부분"), "line small")));
+    }
+  }
+  if (post.credits.length) {
+    const lines = post.credits.map(c => c.line);
+    kids.push(el("div", { class: "card" }, el("div", { class: "name" }, "사진 출처 (참고 자료에 붙이기)"),
+      el("div", { class: "credits" }, ...lines.flatMap((l, i) => i ? [el("br"), l] : [l])),
+      B("사진 출처 복사", async () => done(await copyText(lines.join("\n")), "사진 출처"), "line small")));
+  }
+  APP.replaceChildren(...kids);
+  window.scrollTo(0, 0);
+}
+
+function route() {
+  if (!KEY || !INDEX) return showLock();
+  const m = location.hash.match(/^#p=([\w-]+)$/);
+  if (m) showPost(m[1]); else showList();
+}
+window.addEventListener("hashchange", route);
+
+(async function start() {
+  try { await loadMeta(); } catch (e) { APP.replaceChildren(el("p", { class: "empty" }, "열지 못했어요. 인터넷 연결을 확인해 주세요.")); return; }
+  if (!window.crypto || !crypto.subtle) { APP.replaceChildren(el("p", { class: "empty" }, "이 브라우저에선 열 수 없어요(사파리로 열어 주세요).")); return; }
+  const saved = store(true);
+  if (saved) {
+    try {
+      const j = JSON.parse(saved);
+      if (j.s === META.salt) {
+        KEY = await crypto.subtle.importKey("raw", b64d(j.k), { name: "AES-GCM" }, true, ["decrypt"]);
+        INDEX = await dec("i.bin");
+        return route();
+      }
+    } catch (e) {
+      if (e && (e.name === "TypeError" || (e.message || "").startsWith("fetch"))) {   // 연결 문제면 기억한 열쇠는 지우지 않음
+        APP.replaceChildren(el("p", { class: "empty" }, "인터넷 연결을 확인하고 다시 열어 주세요."));
+        return;
+      }
+    }
+    store(false, null);
+  }
+  showLock();
+})();
+</script>
+</body>
+</html>
